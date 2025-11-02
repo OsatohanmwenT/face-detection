@@ -5,4 +5,5 @@ numpy
 Werkzeug
 Pillow
 gunicorn
+matplotlib
 gunicorn
