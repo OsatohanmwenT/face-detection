@@ -113,7 +113,7 @@ def predict_webcam():
 
         image_bytes = base64.b64decode(image_data)
         image = Image.open(io.BytesIO(image_bytes))
-        
+
         print(f"Received image size: {image.size}, mode: {image.mode}")
 
         # Convert PIL image to OpenCV format
