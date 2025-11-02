@@ -16,10 +16,17 @@ app.config["UPLOAD_FOLDER"] = "uploads"
 # Create uploads folder if it doesn't exist
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-# Initialize emotion detector with cleaner class
-print("Initializing Emotion Detector...")
-detector = EmotionDetector(model_path="face_model.h5")
-print("Emotion Detector ready!")
+# Lazy load detector (only initialize when first used)
+detector = None
+
+def get_detector():
+    """Lazy load the emotion detector to save memory"""
+    global detector
+    if detector is None:
+        print("Initializing Emotion Detector...")
+        detector = EmotionDetector(model_path="face_model.h5")
+        print("Emotion Detector ready!")
+    return detector
 
 
 @app.route("/")
@@ -44,11 +51,9 @@ def predict():
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
         file.save(filepath)
-
+        
         # Predict emotion using the cleaner EmotionDetector class
-        result = detector.predict_emotion(filepath)
-
-        # Read image and convert to base64 for display
+        result = get_detector().predict_emotion(filepath)        # Read image and convert to base64 for display
         with open(filepath, "rb") as img_file:
             img_data = base64.b64encode(img_file.read()).decode("utf-8")
 
@@ -103,10 +108,10 @@ def predict_webcam():
         import numpy as np
 
         frame = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-
+        
         # Predict emotion from frame
-        result = detector.predict_from_frame(frame)
-
+        result = get_detector().predict_from_frame(frame)
+        
         if not result["success"]:
             return jsonify({"error": result.get("error", "No face detected")}), 400
 
