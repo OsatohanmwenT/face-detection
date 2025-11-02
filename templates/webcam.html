@@ -317,6 +317,7 @@
                 });
                 
                 const result = await response.json();
+                console.log('Server response:', result);
                 
                 if (response.ok && result.success) {
                     // Display emotion
@@ -331,6 +332,7 @@
                     document.getElementById('status').className = 'status info';
                     document.getElementById('status').textContent = `✅ Detected ${emotion} with ${confidence}% confidence!`;
                 } else {
+                    console.error('Detection failed:', result.error);
                     document.getElementById('status').className = 'status error';
                     document.getElementById('status').textContent = `❌ ${result.error || 'Could not detect emotion'}`;
                     document.getElementById('emotionDisplay').classList.remove('show');

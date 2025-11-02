@@ -90,10 +90,16 @@ def predict_webcam():
     try:
         # Get image data from request
         data = request.get_json()
+
+        if not data:
+            print("Error: No JSON data received")
+            return jsonify({"success": False, "error": "No data received"}), 400
+
         image_data = data.get("image", "")
 
         if not image_data:
-            return jsonify({"error": "No image data provided"}), 400
+            print("Error: No image data in request")
+            return jsonify({"success": False, "error": "No image data provided"}), 400
 
         # Remove data URL prefix
         image_data = image_data.split(",")[1] if "," in image_data else image_data
@@ -101,25 +107,28 @@ def predict_webcam():
         # Decode base64 image
         import io
 
+        import cv2
+        import numpy as np
         from PIL import Image
 
         image_bytes = base64.b64decode(image_data)
         image = Image.open(io.BytesIO(image_bytes))
 
         # Convert PIL image to OpenCV format
-        import cv2
-        import numpy as np
-
         frame = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
 
         # Predict emotion from frame
         result = get_detector().predict_from_frame(frame)
 
-        if not result["success"]:
-            return jsonify({"error": result.get("error", "No face detected")}), 400
+        print(f"Prediction result: {result}")
+
+        if not result.get("success"):
+            error_msg = result.get("error", "No face detected")
+            print(f"Prediction failed: {error_msg}")
+            return jsonify({"success": False, "error": error_msg}), 400
 
         # Return first face result (for simplicity)
-        if result.get("faces"):
+        if result.get("faces") and len(result["faces"]) > 0:
             face_result = result["faces"][0]
             return jsonify(
                 {
@@ -129,10 +138,16 @@ def predict_webcam():
                 }
             )
         else:
-            return jsonify({"error": "No face detected"}), 400
+            print("No faces found in result")
+            return jsonify({"success": False, "error": "No face detected"}), 400
 
     except Exception as e:
-        return jsonify({"error": f"Error processing webcam image: {str(e)}"}), 500
+        error_msg = f"Error processing webcam image: {str(e)}"
+        print(error_msg)
+        import traceback
+
+        traceback.print_exc()
+        return jsonify({"success": False, "error": error_msg}), 500
 
 
 if __name__ == "__main__":
