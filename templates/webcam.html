@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam Emotion Detection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .webcam-container {
+            position: relative;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #video {
+            width: 100%;
+            max-width: 640px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        #video.show {
+            display: block;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .emotion-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .emotion-display.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .emotion-label {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .confidence {
+            font-size: 1.5em;
+            opacity: 0.9;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            display: block;
+        }
+
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            display: block;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 1.1em;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+        .emotion-emoji {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .detecting {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .detecting.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 Webcam Emotion Detection</h1>
+        <p class="subtitle">Real-time emotion detection using your webcam</p>
+
+        <div class="status info" id="status">
+            Click "Start Webcam" to begin emotion detection
+        </div>
+
+        <div class="detecting" id="detecting">
+            🔍 Detecting emotion...
+        </div>
+
+        <div class="webcam-container">
+            <div class="canvas-wrapper">
+                <video id="video" autoplay playsinline></video>
+                <canvas id="canvas"></canvas>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="startBtn" onclick="startWebcam()">
+                📹 Start Webcam
+            </button>
+            <button class="btn btn-secondary" id="stopBtn" onclick="stopWebcam()" disabled>
+                ⏹️ Stop Webcam
+            </button>
+            <button class="btn btn-success" id="detectBtn" onclick="detectEmotion()" disabled>
+                🎯 Detect Emotion
+            </button>
+        </div>
+
+        <div class="emotion-display" id="emotionDisplay">
+            <div class="emotion-emoji" id="emotionEmoji">😊</div>
+            <div class="emotion-label" id="emotionLabel">Happy</div>
+            <div class="confidence" id="confidence">Confidence: 95%</div>
+        </div>
+
+        <div class="back-link">
+            <a href="/">← Back to Upload Mode</a>
+        </div>
+    </div>
+
+    <script>
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let stream = null;
+        let isDetecting = false;
+
+        const emotionEmojis = {
+            'Happy': '😊',
+            'Sad': '😢',
+            'Angry': '😠',
+            'Surprise': '😲',
+            'Fear': '😨',
+            'Disgust': '🤢',
+            'Neutral': '😐'
+        };
+
+        async function startWebcam() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    } 
+                });
+                video.srcObject = stream;
+                video.classList.add('show');
+                
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('detectBtn').disabled = false;
+                
+                document.getElementById('status').className = 'status info';
+                document.getElementById('status').textContent = '✅ Webcam started! Click "Detect Emotion" to analyze your expression.';
+            } catch (err) {
+                console.error('Error accessing webcam:', err);
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').textContent = '❌ Error accessing webcam. Please ensure you have granted camera permissions.';
+            }
+        }
+
+        function stopWebcam() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                video.classList.remove('show');
+                stream = null;
+                
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                document.getElementById('detectBtn').disabled = true;
+                
+                document.getElementById('status').className = 'status info';
+                document.getElementById('status').textContent = 'Webcam stopped. Click "Start Webcam" to begin again.';
+            }
+        }
+
+        async function detectEmotion() {
+            if (isDetecting) return;
+            
+            isDetecting = true;
+            document.getElementById('detectBtn').disabled = true;
+            document.getElementById('detecting').classList.add('show');
+            
+            try {
+                // Capture frame from video
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Convert canvas to base64
+                const imageData = canvas.toDataURL('image/jpeg');
+                
+                // Send to server
+                const response = await fetch('/predict_webcam', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ image: imageData })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    // Display emotion
+                    const emotion = result.emotion;
+                    const confidence = (result.confidence * 100).toFixed(1);
+                    
+                    document.getElementById('emotionEmoji').textContent = emotionEmojis[emotion] || '😊';
+                    document.getElementById('emotionLabel').textContent = emotion;
+                    document.getElementById('confidence').textContent = `Confidence: ${confidence}%`;
+                    document.getElementById('emotionDisplay').classList.add('show');
+                    
+                    document.getElementById('status').className = 'status info';
+                    document.getElementById('status').textContent = `✅ Detected ${emotion} with ${confidence}% confidence!`;
+                } else {
+                    document.getElementById('status').className = 'status error';
+                    document.getElementById('status').textContent = `❌ ${result.error || 'Could not detect emotion'}`;
+                    document.getElementById('emotionDisplay').classList.remove('show');
+                }
+            } catch (error) {
+                console.error('Error detecting emotion:', error);
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').textContent = '❌ Error detecting emotion. Please try again.';
+            } finally {
+                isDetecting = false;
+                document.getElementById('detectBtn').disabled = false;
+                document.getElementById('detecting').classList.remove('show');
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            if (event.code === 'Space' && !document.getElementById('detectBtn').disabled) {
+                event.preventDefault();
+                detectEmotion();
+            }
+        });
+    </script>
+</body>
+</html>
