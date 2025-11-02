@@ -1,17 +1,14 @@
 # Nixpacks configuration for Railway
+[providers.python]
+
 [phases.setup]
-nixPkgs = ["python311", "gcc", "glib", "zlib"]
+nixPkgs = ["python311", "pip"]
 
 [phases.install]
-cmds = ["pip install -r requirements.txt"]
+cmds = ["pip install --upgrade pip setuptools wheel", "pip install -r requirements.txt"]
 
 [phases.build]
-cmds = ["mkdir -p uploads models"]
+cmds = ["mkdir -p uploads", "mkdir -p models"]
 
 [start]
 cmd = "gunicorn -w 1 -b 0.0.0.0:$PORT app:app --timeout 300 --worker-class sync --max-requests 100 --max-requests-jitter 10 --log-level info --preload"
-
-[variables]
-PYTHON_VERSION = "3.11"
-TF_CPP_MIN_LOG_LEVEL = "2"
-TF_ENABLE_ONEDNN_OPTS = "0"
