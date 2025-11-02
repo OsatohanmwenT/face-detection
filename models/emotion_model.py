@@ -115,12 +115,12 @@ class EmotionDetector:
         else:
             gray = image
         
-        # Detect faces
+        # Detect faces with more lenient parameters for webcam
         faces = self.face_cascade.detectMultiScale(
             gray,
-            scaleFactor=1.1,
-            minNeighbors=5,
-            minSize=(30, 30),
+            scaleFactor=1.05,  # More sensitive (was 1.1)
+            minNeighbors=3,     # Less strict (was 5)
+            minSize=(20, 20),   # Smaller minimum size (was 30x30)
             flags=cv2.CASCADE_SCALE_IMAGE
         )
         
@@ -214,11 +214,26 @@ class EmotionDetector:
             # Convert to grayscale
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             
+            # Log frame info for debugging
+            print(f"Frame shape: {frame.shape}, Gray shape: {gray.shape}")
+            
             # Detect faces
             faces = self.detect_faces(frame)
             
+            print(f"Detected {len(faces)} face(s)")
+            
             if len(faces) == 0:
-                return {'success': False, 'error': 'No face detected'}
+                # Try alternative detection with even more lenient parameters
+                faces = self.face_cascade.detectMultiScale(
+                    gray,
+                    scaleFactor=1.02,
+                    minNeighbors=2,
+                    minSize=(15, 15)
+                )
+                print(f"Second attempt: Detected {len(faces)} face(s)")
+                
+                if len(faces) == 0:
+                    return {'success': False, 'error': 'No face detected. Please ensure your face is clearly visible with good lighting.'}
             
             results = []
             
